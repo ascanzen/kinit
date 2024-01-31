@@ -26,5 +26,24 @@ urlpatterns = [
     {"ApiRouter": vadmin_analysis_app, "prefix": "/vadmin/analysis", "tags": ["数据分析管理"]},
     {"ApiRouter": vadmin_help_app, "prefix": "/vadmin/help", "tags": ["帮助中心管理"]},
     {"ApiRouter": vadmin_resource_app, "prefix": "/vadmin/resource", "tags": ["资源管理"]},
-    {"ApiRouter": quant_stock_app, "prefix": "/quant/stock", "tags": ["股票"]},
+    # {"ApiRouter": quant_stock_app, "prefix": "/quant/stock", "tags": ["股票"]},
 ]
+
+import importlib
+import pkgutil
+# 导入apps.quant模块的所有子模块的.model模块
+class_name = "app"
+quant_module = importlib.import_module('apps.quant')
+for _, module_name, _ in pkgutil.iter_modules(quant_module.__path__):
+    module = importlib.import_module(f'apps.quant.{module_name}.views')
+    # 导入模块中的所有类
+    for attr in dir(module):
+        if attr.startswith('__'):
+            continue
+        
+        if attr == class_name:
+            class_obj = getattr(module, class_name)
+            globals()[attr] = class_obj
+            urlpatterns.append({"ApiRouter": class_obj, "prefix": f"/quant/{module_name}", "tags": None})
+
+            

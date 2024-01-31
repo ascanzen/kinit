@@ -33,6 +33,19 @@ fileConfig(config.config_file_name)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
+import importlib
+import pkgutil
+# 导入apps.quant模块的所有子模块的.model模块
+quant_module = importlib.import_module('apps.quant')
+for _, module_name, _ in pkgutil.iter_modules(quant_module.__path__):
+    module = importlib.import_module(f'apps.quant.{module_name}.models')
+    # 导入模块中的所有类
+    for attr in dir(module):
+        if attr.startswith('__'):
+            continue
+        globals()[attr] = getattr(module, attr)
+
+
 # 导入项目中的基本映射类，与 需要迁移的 ORM 模型
 from apps.vadmin.auth.models import *
 from apps.vadmin.system.models import *

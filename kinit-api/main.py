@@ -42,8 +42,7 @@ def create_app():
         description="本项目基于Fastapi与Vue3+Typescript+Vite4+element-plus的基础项目 前端基于vue-element-plus-admin框架开发",
         version=settings.VERSION,
         lifespan=lifespan,
-        docs_url=None,
-        redoc_url=None
+        swagger_ui_parameters={"persistAuthorization": True},
     )
     import_modules(settings.MIDDLEWARES, "中间件", app=app)
     # 全局异常捕捉处理
@@ -127,5 +126,42 @@ def init_app(path: str):
     app.run()
 
 
+@shell_app.command()
+def g(
+        class_name: str = typer.Option(..., help="The name of the class"),
+        zh_name: str = typer.Option(..., help="The Chinese name"),
+        en_name: str = typer.Option(..., help="The English name")
+):
+    """
+    生成代码
+    """
+    from scripts.crud_generate.main import CrudGenerate
+    import os
+    import sys
+    from apps.quant.stock.models import QuantStock
+
+    import importlib
+    import pkgutil
+    # 导入apps.quant模块的所有子模块的.model模块
+    quant_module = importlib.import_module('apps.quant')
+    for _, module_name, _ in pkgutil.iter_modules(quant_module.__path__):
+        module = importlib.import_module(f'apps.quant.{module_name}.models')
+        # 导入模块中的所有类
+        for attr in dir(module):
+            if attr.startswith('__'):
+                continue
+            
+            if attr == class_name:
+                class_obj = getattr(module, class_name)
+                globals()[attr] = class_obj
+
+                crud = CrudGenerate(class_obj, zh_name, en_name)
+                # 只打印代码，不执行创建写入
+                crud.generate_codes()
+                # 创建并写入代码
+                crud.main()
+                return
+
+    
 if __name__ == '__main__':
     shell_app()
